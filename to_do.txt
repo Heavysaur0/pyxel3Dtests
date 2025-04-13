@@ -1,0 +1,2 @@
+Rendering:
+* Actual clipping of triangles (cut triangles in parts that will be displayed) -> recursive cutting I guess
