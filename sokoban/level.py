@@ -1,9 +1,12 @@
 import numpy as np
-
-from sokoban.render.object import Object
-from stack import Stack
 import pyxel
+
+from render.object import Object
+from render.camera import Camera
+from render.render import Render
 from render.mesh import Mesh
+
+from stack import Stack
 
 from options import W_WIDTH, W_HEIGHT, TILE_SIZE
 from options import VOID, PLAYER, WALL, BOX, TARGET, LEVEL_CHAR_TRANSLATOR, FLOOR_CHAR_TRANSLATOR
@@ -51,7 +54,10 @@ def face_quad(x, y, w, h, face):
 
 
 class Level:
-    def __init__(self, app, layout: str, debug = False):
+    def __init__(self, layout: str):
+        self.camera = Camera((-10, 5, 0))
+        self.render = Render(self.camera, cull_face=True, depth_sort=True)
+        
         self.width: int = 0
         self.height: int = 0
 
@@ -65,10 +71,8 @@ class Level:
 
         self.level, self.floor = self.get_level_floor(layout)
 
-        self.debug = debug
-        if not self.debug:
-            self.mesh = self.get_mesh()
-            self.object = Object(app.render, self.mesh)
+        self.mesh = self.get_mesh()
+        self.object = Object(self.render, self.mesh)
 
         self.moves = Stack()
         self.quit = False
@@ -107,7 +111,7 @@ class Level:
 
         return level, floor
 
-    def greedy_mesh_2d(self, mask, face, vertex_data, index_data, color_data, outer_border_data):
+    def greedy_mesh_2d(self, mask, face, vertex_data, index_data, color_data, fill_data, outer_border_data):
         visited = np.zeros_like(mask, dtype=bool)
         for x in range(self.width):
             for y in range(self.height):
@@ -137,12 +141,15 @@ class Level:
                 offset = len(vertex_data)
                 vertex_data.extend(verts)
                 index_data.append((offset, offset + 1, offset + 2, offset + 3))
-                color_data.append(13)
                 border = face in ('right', 'left', 'front', 'back')
+                fill_data.append(True)
                 outer_border_data.append(1 if border else -1)
+                color_data.append(9 if border else 13)
 
     def should_create_face(self, x, y, dx, dy):
         # Determines whether a face is visible in that direction
+        if not self.level[x, y]:
+            return False
         if dx == dy == 0:
             return True
         nx, ny = x + dx, y + dy
@@ -154,6 +161,7 @@ class Level:
         vertex_data = []
         index_data = []
         color_data = []
+        fill_data = []
         outer_border_data = []
 
         directions = [
@@ -168,11 +176,12 @@ class Level:
             mask = np.zeros((self.width, self.height), dtype=bool)
             for x in range(self.width):
                 for y in range(self.height):
-                    if self.level[x, y] and self.should_create_face(x, y, dx, dy):
+                    if self.should_create_face(x, y, dx, dy):
                         mask[x, y] = True
-            self.greedy_mesh_2d(mask, face, vertex_data, index_data, color_data, outer_border_data)
+            self.greedy_mesh_2d(mask, face, vertex_data, index_data, color_data, fill_data, outer_border_data)
 
         return Mesh(vertex_data, index_data, color_data,
+                    fill_data=fill_data,
                     outer_border_data=outer_border_data)
 
     def reset(self):
@@ -255,31 +264,13 @@ class Level:
         if dx != 0 or dy != 0:
             self.move_player(dx, dy)
 
-        if not self.debug:
-            self.object.update()
+        self.object.update()
+        self.camera.update()
 
     def draw(self):
-        if self.debug:
-            pyxel.cls(0)
-
-            for y in range(self.height):
-                for x in range(self.width):
-                    if self.level[x, y]:
-                        pos_x, pos_y = x * TILE_SIZE, y * TILE_SIZE
-                        pyxel.rect(pos_x, pos_y, TILE_SIZE, TILE_SIZE, 13)
-
-            for x, y in self.targets:
-                pos_x, pos_y = x * TILE_SIZE + 1, y * TILE_SIZE + 1
-                pyxel.rectb(pos_x, pos_y, TILE_SIZE - 2, TILE_SIZE - 2, 10)
-
-            for x, y in self.boxes:
-                pos_x, pos_y = x * TILE_SIZE, y * TILE_SIZE
-                pyxel.rectb(pos_x, pos_y, TILE_SIZE, TILE_SIZE, 9)
-
-            pyxel.rect(self.player_pos[0] * TILE_SIZE, self.player_pos[1] * TILE_SIZE,
-                       TILE_SIZE, TILE_SIZE, 12)
-        else:
-            self.object.draw()
+        self.render.clear()
+        self.object.draw()
+        self.render.draw()
 
 
 if __name__ == '__main__':
@@ -394,7 +385,7 @@ _______________####__________
 
         def re_level(self):
             self.index %= len(LEVELS)
-            self.level = Level(None, LEVELS[self.index], debug=True)
+            self.level = Level(None, LEVELS[self.index])
 
         def draw(self):
             self.level.draw()

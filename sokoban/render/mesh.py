@@ -3,10 +3,10 @@ import numpy as np
 
 
 class Mesh:
-    __slots__ = ('vertex_data', 'index_data', 'color_data', 'num_triangles', 'normal_data', 'outer_border_data')
+    __slots__ = ('vertex_data', 'index_data', 'color_data', 'num_triangles', 'normal_data', 'fill_data', 'outer_border_data')
 
     def __init__(self, vertex_data, index_data, color_data,
-                 normal_data = None, outer_border_data = None):
+                 normal_data = None, fill_data = None, outer_border_data = None):
         self.vertex_data = np.array(vertex_data, dtype=np.float32)
 
         index_dtype = self.get_index_type()
@@ -24,6 +24,11 @@ class Mesh:
             self.outer_border_data = np.zeros((self.num_triangles, ), dtype=np.int8) - 1
         else:
             self.outer_border_data = np.array(outer_border_data, dtype=np.int8)
+        
+        if fill_data is None:
+            self.fill_data = np.zeros((self.num_triangles, ), dtype=bool)
+        else:
+            self.fill_data = np.array(fill_data, dtype=bool)
 
     def get_index_type(self):
         length = len(self.vertex_data)

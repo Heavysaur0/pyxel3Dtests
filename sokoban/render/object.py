@@ -25,6 +25,7 @@ class Object:
         for i, indices in enumerate(self.mesh.index_data):
             points = [self.computed_vertices[index] for index in indices]
             color = self.mesh.color_data[i]
-            outer_border = self.mesh.outer_border_data[i]
             normal = self.computed_normals[i]
-            self.render.append_polygon(points, color, normal, fill=True, border=outer_border)
+            fill = self.mesh.fill_data[i]
+            outer_border = self.mesh.outer_border_data[i]
+            self.render.append_polygon(points, color, normal, fill=fill, border=outer_border)

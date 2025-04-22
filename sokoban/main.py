@@ -2,8 +2,6 @@ import pyxel
 from time import perf_counter
 
 from render.mesh import Mesh
-from render.camera import Camera
-from render.render import Render
 from level import Level
 
 from options import W_WIDTH, W_HEIGHT, SCALE
@@ -90,6 +88,38 @@ LEVELS = """
 ########
 """.split("\n\n")
 
+LEVELS = ["""
+_____##################______
+_____#--#@-########---#______
+_____#---$-##---------#______
+_____#--#--##$######-####____
+_____##.#-##--#---#-$-.-#____
+####_-#-#--#---$#-#---#-#____
+#--####-##*#-##----####-#____
+#-.*----#-.$$-#-$$-####-#____
+#--$$$-##-.$--#-$--#----#____
+##*#-##--$.#--#$--#--######__
+_#.--##-$..-##--$-#-#-----#__
+_#-#-####--$-----##-#.##**##_
+_#--..--######-####-.--$---#_
+_#####$-...-$-....-#-*-#$--#_
+__#--.--##$.######-##-.--###_
+__#-##*#---$-#####.$-$-###___
+###$-..#.#--$---##.--.#--#___
+#--..#.#-$$*-##--##-###-.####
+#-$$$-$-..-.-###--#---$*-.--#
+###.-$-#####$####$#*###-.*.-#
+_#--####---.-----.*--##*--###
+##-#####-##.#####-##--*-.##__
+#------#..$.-####-###-#--#___
+#-$$#--$..#..$--------####___
+#----$$##-#######-#$#$#______
+###$$--$--#____#--$---#______
+__#----####____#----###______
+__######_______#--###________
+_______________####__________
+"""]
+
 
 CUBE_VERTICES = tuple((a, b, c) for a in (-1, 1) for b in (-1, 1) for c in (-1, 1))
 CUBE_INDICES = (
@@ -106,8 +136,6 @@ CUBE_COLOR = tuple((i % 15) + 1 for i in range(len(CUBE_INDICES)))
 class App:
     def __init__(self):
         pyxel.init(W_WIDTH, W_HEIGHT, fps=60, display_scale=SCALE)
-        self.camera = Camera((0, -2, -5))
-        self.render = Render(self.camera, cull_face=True, depth_sort=True)
         self.meshes = {}
         self.level = None
         self.index = 0
@@ -123,7 +151,6 @@ class App:
 
     def update(self):
         if self.level is not None:
-            self.camera.update()
             self.level.update()
         else:
             if pyxel.btnp(pyxel.KEY_Q):
@@ -138,14 +165,12 @@ class App:
 
     def re_level(self):
         self.index %= len(LEVELS)
-        self.level = Level(self, LEVELS[self.index])
+        self.level = Level(LEVELS[self.index])
 
     def draw(self):
         pyxel.cls(0)
-        self.render.clear()
         if self.level is not None:
-            self.level.draw() # Buffer triangles into the render
-            self.render.draw() # Render the scene
+            self.level.draw() # Buffer triangles into the render and draw them
 
         current_time = perf_counter()
         self.delta_time = current_time - self.current_time

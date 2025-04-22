@@ -59,7 +59,8 @@ class Render:
 
         for data in polygons_array:
             points, color, normal, fill, border = data
-            points = [(vertex[:2] + (1, 1)) * (W_WIDTH, W_WIDTH) / 2 for vertex in points]
+            
+            points = [((vertex[0] + 1) * W_WIDTH / 2, (1 - vertex[1]) * W_HEIGHT / 2) for vertex in points]
 
             for triangle in triangulate(points):
                 flatten_points = [point[i] for point in triangle for i in range(2)]

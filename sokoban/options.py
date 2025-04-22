@@ -1,10 +1,4 @@
-
-# Screen
-W_WIDTH, W_HEIGHT = 256, 256
-SCALE = 4
-TILE_SIZE = 8 * SCALE
-
-
+from render.options import W_WIDTH, W_HEIGHT, SCALE, TILE_SIZE
 
 """####__
 #-.#__
