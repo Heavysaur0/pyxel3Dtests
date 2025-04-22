@@ -47,15 +47,14 @@ class Render:
 
         clipped = np.array([v[:3] / v[3] for v in clipped], dtype=np.float32)
 
-        triangles = clip_triangle_to_unit_cube(*clipped[:3]) if len(clipped) == 3 else triangulate(clipped)
-
         if self.cull_face:
-            v1 = triangles[0][2][:2] - triangles[0][1][:2]
-            v2 = triangles[0][1][:2] - triangles[0][0][:2]
+            v1 = clipped[0][:2] - clipped[0][:2]
+            v2 = clipped[1][:2] - clipped[1][:2]
             if v1[0] * v2[1] - v1[1] * v2[0] >= 0:
                 print("Triangle is not rendered, face is not in the correct direction")
                 return
 
+        triangles = triangulate(clipped)
         [self.triangle_stack.append((tri, normal, color)) for tri in triangles]
 
     def draw(self):
@@ -130,59 +129,12 @@ def homogeneous_clip_triangle(triangle):
 
     return polygon
 
-def inside(p, normal, offset):
-    return np.dot(normal, p) <= offset
-
-def intersect(p1, p2, normal, offset):
-    direction = p2 - p1
-    denom = np.dot(normal, direction)
-    if denom == 0:
-        return p1
-    t = (offset - np.dot(normal, p1)) / denom
-    return p1 + t * direction
-
-def clip_polygon_against_plane(polygon, normal, offset):
-    result = []
-    prev = polygon[-1]
-    prev_inside = inside(prev, normal, offset)
-
-    for curr in polygon:
-        curr_inside = inside(curr, normal, offset)
-
-        if curr_inside:
-            if not prev_inside:
-                result.append(intersect(prev, curr, normal, offset))
-            result.append(curr)
-        elif prev_inside:
-            result.append(intersect(prev, curr, normal, offset))
-
-        prev = curr
-        prev_inside = curr_inside
-
-    return result
-
 def triangulate(polygon):
+    """Triangulate a polygon into multiple triangles
+    /!\ Only works on convex shapes"""
     if len(polygon) < 3:
         return []
     triangles = []
     for i in range(1, len(polygon) - 1):
         triangles.append([polygon[0], polygon[i], polygon[i + 1]])
     return triangles
-
-def clip_triangle_to_unit_cube(v0, v1, v2):
-    poly = [np.array(v0), np.array(v1), np.array(v2)]
-    planes = [
-        (np.array([ 1, 0, 0]), 1),
-        (np.array([-1, 0, 0]), 1),
-        (np.array([ 0, 1, 0]), 1),
-        (np.array([ 0,-1, 0]), 1),
-        (np.array([ 0, 0, 1]), 1),
-        (np.array([ 0, 0,-1]), 1)
-    ]
-
-    for normal, offset in planes:
-        poly = clip_polygon_against_plane(poly, normal, offset)
-        if not poly:
-            return []
-
-    return triangulate(poly)

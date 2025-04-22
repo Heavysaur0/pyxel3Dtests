@@ -22,13 +22,14 @@ class Mesh:
         self.color_data = np.array(color_data, dtype=np.uint8)
         self.num_triangles = len(index_data)
 
-        if len(normal_data) < self.num_triangles:
-            self.normal_data = np.zeros((self.num_triangles, 3), dtype=np.float32)
-            self.compute_normals()
+        if normal_data is None:
+            self.normal_data = self.compute_normals()
         else:
             self.normal_data = np.array(normal_data, dtype=np.float32)
 
     def compute_normals(self):
+        normal_data = np.zeros((self.num_triangles, 3), dtype=np.float32)
         for index in range(self.num_triangles):
             p0, p1, p2 = [self.vertex_data[i] for i in self.index_data[index]]
-            self.normal_data[index] = glm.normalize(glm.cross(p2 - p1, p1 - p0))
+            normal_data[index] = glm.normalize(glm.cross(p2 - p1, p1 - p0))
+        return normal_data
