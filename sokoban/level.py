@@ -52,10 +52,16 @@ def face_quad(x, y, w, h, face):
     else:
         raise ValueError(f"Unknown face: {face}")
 
+def find(array, element):
+    for index, ele in enumerate(array):
+        if ele == element:
+            return index
+    return -1
+
 
 class Level:
     def __init__(self, layout: str):
-        self.camera = Camera((-10, 5, 0))
+        self.camera = Camera((-8, 12, -8), -20, 140)
         self.render = Render(self.camera, cull_face=True, depth_sort=True)
         
         self.width: int = 0
@@ -111,7 +117,8 @@ class Level:
 
         return level, floor
 
-    def greedy_mesh_2d(self, mask, face, vertex_data, index_data, color_data, fill_data, outer_border_data):
+    def greedy_mesh_2d(self, mask, face, vertex_data, index_data, index_map, 
+                       color_data, fill_data, outer_border_data):
         visited = np.zeros_like(mask, dtype=bool)
         for x in range(self.width):
             for y in range(self.height):
@@ -139,8 +146,18 @@ class Level:
                 # Add quad
                 verts = face_quad(x, y, w, h, face)
                 offset = len(vertex_data)
-                vertex_data.extend(verts)
-                index_data.append((offset, offset + 1, offset + 2, offset + 3))
+                indices = []
+
+                for vertex in verts:
+                    if vertex in index_map:
+                        indices.append(index_map[vertex])
+                    else:
+                        index_map[vertex] = offset
+                        vertex_data.append(vertex)
+                        indices.append(offset)
+                        offset += 1
+
+                index_data.append(indices)
                 border = face in ('right', 'left', 'front', 'back')
                 fill_data.append(True)
                 outer_border_data.append(1 if border else -1)
@@ -160,6 +177,7 @@ class Level:
     def get_mesh(self):
         vertex_data = []
         index_data = []
+        index_map = {}
         color_data = []
         fill_data = []
         outer_border_data = []
@@ -178,7 +196,8 @@ class Level:
                 for y in range(self.height):
                     if self.should_create_face(x, y, dx, dy):
                         mask[x, y] = True
-            self.greedy_mesh_2d(mask, face, vertex_data, index_data, color_data, fill_data, outer_border_data)
+            self.greedy_mesh_2d(mask, face, vertex_data, index_data, index_map, color_data, 
+                                fill_data, outer_border_data)
 
         return Mesh(vertex_data, index_data, color_data,
                     fill_data=fill_data,
@@ -240,6 +259,8 @@ class Level:
             self.boxes.add(box_pos)
 
     def update(self):
+        self.render.clear()
+        
         self.quit = pyxel.btnp(pyxel.KEY_Q)
 
         if pyxel.btnp(pyxel.KEY_R):
@@ -264,11 +285,10 @@ class Level:
         if dx != 0 or dy != 0:
             self.move_player(dx, dy)
 
-        self.object.update()
         self.camera.update()
+        self.object.update()
 
     def draw(self):
-        self.render.clear()
         self.object.draw()
         self.render.draw()
 

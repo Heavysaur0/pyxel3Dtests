@@ -1,4 +1,5 @@
 import pyxel
+import sys
 from time import perf_counter
 
 from render.mesh import Mesh
@@ -88,7 +89,7 @@ LEVELS = """
 ########
 """.split("\n\n")
 
-LEVELS = ["""
+LEVELS = """
 _____##################______
 _____#--#@-########---#______
 _____#---$-##---------#______
@@ -118,7 +119,46 @@ _#--####---.-----.*--##*--###
 __#----####____#----###______
 __######_______#--###________
 _______________####__________
-"""]
+
+__________#######________############_______
+______#####-----####_____#-----#----##______
+_____###--#--*-----#__####--#*---*-*-#####__
+____##--*-$-#-*-#--#__#---**-*-####*-#---#__
+___##--*--#-##-*--#####*#---*-#####-*-*--#__
+___#-*-*#----###*--...#---##**----#-**-*-##_
+__##----##-*-##-*-#-$-#-*-----#*#-------*-#_
+_##--*-###-*##-*--#-$@#-#####---#-.*###..-#_
+_#----###--*------#-*---#######-##*---*-*-#_
+_#-****-#-#######-#####-#######----$.$-*-###
+_#-#---*---#--###.#####*-##############-$--#
+_#--#-#--***.-#--.-#--.$.--##---##---###---#
+_##-#-###-----#$$#$#$-#*#.----$--#-*--###-##
+__#-*-----#####--.-..-....####*$--#-#-###-##
+__##-####-#-#-#.#######$#$#---*-$-#$#-###--#
+__#-$-----..*.####---#.*..--*-##-##------$-#
+__#---#####-*-..#--$--.#-#--#---.-.-#####--#
+#######---#--#----####.--##-#-#-#-*$-##_####
+#---------####-###-.#-.*#-*-*-#-#-.---#_____
+#-#-####-#--.*.#-$*-.-*-$---#-#-*-*-#-#_____
+#-*-*-#-----.$-#---*#--###--*-##*-###-#_____
+#-*-*-*-###-#-####-.###--#-*-###---##-#_____
+####*---#---#----#.----$.-#*--##-#-*--#_____
+___#--#-#-*-##-*--#--#$.$.#-**##--#-#-##____
+___#*-#-##$*-#*#$-####-$.-#-------#-#--###__
+___#--*--#---#-*--#---#--*#####**#--*----#__
+___#*#-#--#--*--###-**-#--#####--*-*-*-$-#__
+_###---##*-#*#--###-*-.$-*-####-#####-*#-#__
+_#-**$------*--####-**--#---.-----*---*--#__
+_#-----#*-**##----#-*---###-*-#-###-######__
+_###-##-**--##*##-#--*#-###$***.*.*-#_______
+___#---*--#*#---#-#-*-#-#-$---#--$.-#_______
+___###--.*----$-#--##-*-#---####---##_______
+_____##---**#####.*.-*--#-$--$-#-#########__
+______###--*--##-*$--##-#-$$$$-#-$-------#__
+________###-*---*--#----#-$--$-#-$$$$$$$-#__
+__________#---#---#######----------------#__
+__________#########_____##################__
+""".split("\n\n")
 
 
 CUBE_VERTICES = tuple((a, b, c) for a in (-1, 1) for b in (-1, 1) for c in (-1, 1))
@@ -134,7 +174,9 @@ CUBE_COLOR = tuple((i % 15) + 1 for i in range(len(CUBE_INDICES)))
 
 
 class App:
-    def __init__(self):
+    def __init__(self, profiler = None):
+        self.profiler = profiler
+        
         pyxel.init(W_WIDTH, W_HEIGHT, fps=60, display_scale=SCALE)
         self.meshes = {}
         self.level = None
@@ -150,18 +192,24 @@ class App:
         self.meshes["cube"] = Mesh(CUBE_VERTICES, CUBE_INDICES, CUBE_COLOR)
 
     def update(self):
+        print(f"Pyxel frame count: {pyxel.frame_count}")
         if self.level is not None:
             self.level.update()
-        else:
-            if pyxel.btnp(pyxel.KEY_Q):
-                self.index -= 1
-                self.level = None
-            if pyxel.btnp(pyxel.KEY_D):
-                self.index += 1
-                self.level = None
+        
+        if pyxel.btnp(pyxel.KEY_N):
+            self.index -= 1
+            self.level = None
+        if pyxel.btnp(pyxel.KEY_B):
+            self.index += 1
+            self.level = None
 
         if self.level is None:
             self.re_level()
+        
+        if pyxel.btnp(pyxel.KEY_P) and self.profiler is not None:
+            self.profiler.stop()
+            print(profiler.output_text(unicode=True, color=True))
+            sys.exit()
 
     def re_level(self):
         self.index %= len(LEVELS)
@@ -174,7 +222,11 @@ class App:
 
         current_time = perf_counter()
         self.delta_time = current_time - self.current_time
+        if self.level is not None:
+            print(f"  Num of vertices: {self.level.render.num_vertices}")
+            print(f"  Number of triangles: {self.level.render.num_triangles}")
         print(f"FPS: {1 / self.delta_time}")
+        print()
 
         self.current_time = current_time
         self.time += self.delta_time
@@ -184,5 +236,13 @@ class App:
 
 
 if __name__ == '__main__':
-    app = App()
+    import atexit
+    from pyinstrument import Profiler
+
+    profiler = Profiler(async_mode='enabled')
+    profiler.start()
+
+    # Run your app
+    print("============================== START ==============================")
+    app = App(profiler)
     app.run()

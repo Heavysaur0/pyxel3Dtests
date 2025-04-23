@@ -6,9 +6,9 @@ from render.options import FOV, ASPECT, NEAR, FAR, SENSITIVITY
 class Camera:
     def __init__(self, position=(0, 0, -5), pitch=0, yaw=0, roll=0):
         self.position = glm.vec3(position)
-        self.pitch = pitch
-        self.yaw = yaw
-        self.roll = roll
+        self.pitch = glm.radians(pitch)
+        self.yaw = glm.radians(yaw)
+        self.roll = glm.radians(roll)
         self.fov = FOV
 
         self.mouse_x, self.mouse_y = pyxel.mouse_x, pyxel.mouse_y
