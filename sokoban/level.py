@@ -1,5 +1,6 @@
 import numpy as np
 import pyxel
+from pyglm import glm
 
 from render.object import Object
 from render.camera import Camera
@@ -60,7 +61,8 @@ def find(array, element):
 
 
 class Level:
-    def __init__(self, layout: str):
+    def __init__(self, meshes, layout: str):
+        self.meshes = meshes
         self.camera = Camera((-8, 12, -8), -20, 140)
         self.render = Render(self.camera, cull_face=True, depth_sort=True)
         
@@ -77,8 +79,11 @@ class Level:
 
         self.level, self.floor = self.get_level_floor(layout)
 
-        self.mesh = self.get_mesh()
-        self.object = Object(self.render, self.mesh)
+        level_mesh = self.get_level_mesh()
+        self.level_object = Object(self.render, level_mesh)
+        
+        self.player_object = self.get_player_object()
+        self.objects = self.get_objects()
 
         self.moves = Stack()
         self.quit = False
@@ -160,8 +165,8 @@ class Level:
                 index_data.append(indices)
                 border = face in ('right', 'left', 'front', 'back')
                 fill_data.append(True)
-                outer_border_data.append(1 if border else -1)
-                color_data.append(9 if border else 13)
+                outer_border_data.append(7 if border else -1)
+                color_data.append(5 if border else 1)
 
     def should_create_face(self, x, y, dx, dy):
         # Determines whether a face is visible in that direction
@@ -174,7 +179,7 @@ class Level:
             return True
         return not self.level[nx, ny]
 
-    def get_mesh(self):
+    def get_level_mesh(self):
         vertex_data = []
         index_data = []
         index_map = {}
@@ -202,6 +207,23 @@ class Level:
         return Mesh(vertex_data, index_data, color_data,
                     fill_data=fill_data,
                     outer_border_data=outer_border_data)
+    
+    def get_player_object(self):
+        model_matrix = glm.translate(glm.vec3(self.player_pos[0], 0, self.player_pos[1]))
+        return Object(self.render, self.meshes["player"], model_matrix)
+    
+    def get_objects(self):
+        objects = []
+        
+        for x, y in self.boxes:
+            model_matrix = glm.translate(glm.vec3(x, 0, y))
+            objects.append(Object(self.render, self.meshes["box"], model_matrix))
+        
+        for x, y in self.targets:
+            model_matrix = glm.translate(glm.vec3(x, 0, y))
+            objects.append(Object(self.render, self.meshes["target"], model_matrix))
+        
+        return objects
 
     def reset(self):
         self.player_pos = self.initial_player_pos
@@ -286,10 +308,14 @@ class Level:
             self.move_player(dx, dy)
 
         self.camera.update()
-        self.object.update()
+        self.level_object.update()
+        self.player_object.update()
+        [obj.update() for obj in self.objects]
 
     def draw(self):
-        self.object.draw()
+        self.level_object.draw()
+        self.player_object.draw()
+        [obj.draw() for obj in self.objects]
         self.render.draw()
 
 

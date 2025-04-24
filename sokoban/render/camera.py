@@ -4,7 +4,17 @@ import pyxel
 from render.options import FOV, ASPECT, NEAR, FAR, SENSITIVITY
 
 class Camera:
-    def __init__(self, position=(0, 0, -5), pitch=0, yaw=0, roll=0):
+    """Camera class for frustum rendering"""
+    
+    def __init__(self, position=(0, 0, 0), pitch=0, yaw=0, roll=0):
+        """Class constructor
+
+        Args:
+            position (Iterable[float], optional): starting position of the camera in 3D space. Defaults to (0, 0, 0).
+            pitch (int, optional): angle of pitch of the camera in degrees. Defaults to 0.
+            yaw (int, optional): angle of yaw of the camera in degrees. Defaults to 0.
+            roll (int, optional): angle of roll of the camera in degrees. Defaults to 0.
+        """
         self.position = glm.vec3(position)
         self.pitch = glm.radians(pitch)
         self.yaw = glm.radians(yaw)
@@ -21,6 +31,7 @@ class Camera:
         self.view_matrix = glm.mat4()
 
     def handle_input(self):
+        """Take care of input to move around the camera"""
         dx = dz = dy = 0
         if pyxel.btn(pyxel.KEY_Z):
             dx += 0.1
@@ -44,6 +55,7 @@ class Camera:
         self.position += self.right * dz
     
     def handle_mouse_movement(self):
+        """Take care of mouse movement for camera viewing (pitch and yaw)"""
         mx, my = pyxel.mouse_x, pyxel.mouse_y
         dx, dy = mx - self.mouse_x, my - self.mouse_y
         self.yaw += dx * SENSITIVITY
@@ -56,6 +68,7 @@ class Camera:
         self.mouse_x, self.mouse_y = mx, my
 
     def update_matrices(self):
+        """Update view matrix and forward, right, and up vectors"""
         # Calculate the direction vector
         direction = glm.vec3(
             glm.cos(self.pitch) * glm.sin(self.yaw),
@@ -77,8 +90,8 @@ class Camera:
         # View matrix
         self.view_matrix = glm.lookAt(self.position, self.position + self.forward, self.up)
 
-
     def update(self):
+        """Update method for pyxel run loop"""
         self.handle_input()
         self.handle_mouse_movement()
         self.update_matrices()

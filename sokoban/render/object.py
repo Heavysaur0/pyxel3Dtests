@@ -7,7 +7,16 @@ from render.render import render_normal
 a = 0
 
 class Object:
+    """3D Object class"""
+    
     def __init__(self, render, mesh, model_matrix = glm.mat4()):
+        """Class constructor
+
+        Args:
+            render (Render): 3D rendering class
+            mesh (Mesh): mesh of the 3D object
+            model_matrix (glm.mat4, optional): mopdel matrix of the object. Defaults to glm.mat4().
+        """
         global a
         
         self.id = a
@@ -22,6 +31,7 @@ class Object:
         self.computed_normals = np.zeros((len(mesh.normal_data), 3), dtype=np.float32)
 
     def update(self):
+        """Computes all vertices of the object to 4D homogeneous camera frustum space"""
         # start_time = time.perf_counter()
         
         # self.inv_tra_m_model = glm.mat3(glm.inverse(glm.transpose(self.model_matrix)))
@@ -35,6 +45,7 @@ class Object:
         # print(f"    {self}.update(): {end_time - start_time:.6f}s")
     
     def draw(self):
+        """Add all polygons that compose the object to the rendering stack"""
         # start_time = time.perf_counter()
         
         for i, indices in enumerate(self.mesh.index_data):
@@ -49,4 +60,9 @@ class Object:
         # print(f"    {self}.draw(): {end_time - start_time:.6f}s")
     
     def __repr__(self):
+        """String representation of the object
+
+        Returns:
+            str: string representation, just returns {Object<id>}
+        """
         return f"Object<{self.id}>"
