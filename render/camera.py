@@ -1,7 +1,7 @@
 from pyglm import glm
 import pyxel
 
-from render.options import FOV, ASPECT, NEAR, FAR, SENSITIVITY
+from options import FOV, ASPECT, NEAR, FAR, SENSITIVITY
 
 class Camera:
     """Camera class for frustum rendering"""
@@ -21,7 +21,7 @@ class Camera:
         self.roll = glm.radians(roll)
         self.fov = FOV
 
-        self.initialized = -5
+        self.frame_count = 0
         self.mouse_x, self.mouse_y = 0, 0
 
         self.forward = glm.vec3(0, 0, -1)
@@ -57,22 +57,23 @@ class Camera:
     
     def handle_mouse_movement(self):
         """Take care of mouse movement for camera viewing (pitch and yaw)"""
-        if self.initialized > 0:
-            self.mouse_x = pyxel.mouse_x
-            self.mouse_y = pyxel.mouse_y
-            self.initialized += 1
+        print("pitch/yaw", self.pitch, self.yaw)
+        mx, my = pyxel.mouse_x, pyxel.mouse_y
+        print("mx/my", mx, my)
+        dx, dy = mx - self.mouse_x, my - self.mouse_y
+        print("dx/dy", dx, dy)
+        self.mouse_x, self.mouse_y = mx, my
+        
+        if self.frame_count < 5:
+            self.frame_count += 1
             return
 
-        mx, my = pyxel.mouse_x, pyxel.mouse_y
-        dx, dy = mx - self.mouse_x, my - self.mouse_y
-        
         self.yaw += dx * SENSITIVITY
         self.pitch -= dy * SENSITIVITY
 
         max_pitch = glm.radians(89.0)
         self.pitch = glm.clamp(self.pitch, - max_pitch, max_pitch)
-        
-        self.mouse_x, self.mouse_y = mx, my
+        print("pitch/yaw", self.pitch, self.yaw)
 
     def update_matrices(self):
         """Update view matrix and forward, right, and up vectors"""

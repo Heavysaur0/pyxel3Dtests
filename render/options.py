@@ -1,5 +1,3 @@
-
-
 # main.py
 W_WIDTH = 300
 W_HEIGHT = 300

@@ -238,7 +238,7 @@ class App:
 
     def load_meshes(self):
         self.meshes["cube"] = Mesh(CUBE_VERTICES, CUBE_INDICES, CUBE_COLOR)
-        self.meshes["target"] = load_mesh_from_file("target_detail.mesh")
+        self.meshes["target"] = load_mesh_from_file("target.mesh")
         self.meshes["box"] = load_mesh_from_file("box.mesh")
         self.meshes["player"] = load_mesh_from_file("player.mesh")
 
@@ -259,7 +259,7 @@ class App:
         
         if pyxel.btnp(pyxel.KEY_P) and self.profiler is not None:
             self.profiler.stop()
-            print(profiler.output_text(unicode=True, color=True))
+            print(self.profiler.output_text(unicode=True, color=True))
             sys.exit()
 
     def re_level(self):
